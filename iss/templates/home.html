@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+  {% endfor %}
+  {% endif %}
+
+  <h1>Welcome to my ISS Tracker!</h1>
+
+{% if user.is_authenticated %}
+<p>Hello, {{ user.userprofile.name }}. You can check the current location of the ISS below.
+  {% if user.userprofile.city %}
+  The iss is currently {{ pass_time }} away from {{ user.userprofile.city.name }}.
+{% else %}
+    No city found. Enter a location in your profile in order to track how close the ISS is to you.
+{% endif %}
+  </p>
+{% else %}
+  <p>You can see the current location of the ISS here, on the homepage! Or, you can create an account. Creating an account will let you add your location, which will then track the ISS, and using your coordinates, let you know when you will be able to see it passing overhead.</p>
+{% endif %}
+  <hr>
+
+  <div id="map"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.1/leaflet.js"></script>
+    <script>
+      // Initialize the map
+      var mymap = L.map('map').setView([{{ latitude }}, {{ longitude }}], 3);
+
+      // Add the tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+          '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+          'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+        id: 'mapbox/streets-v11',
+        tileSize: 512,
+        zoomOffset: -1
+      }).addTo(mymap);
+
+      {% if user.is_authenticated %}
+      // Custom House Icon
+      var houseIcon = L.icon({
+        iconUrl: '/static/assets/house.png',
+        iconSize: [50, 50],
+        iconAnchor: [25, 25]
+      });
+
+      // Add the marker for the house
+      var houseMarker = L.marker([{{ user_latitude }}, {{ user_longitude }}], {icon: houseIcon}).addTo(mymap);
+      {% endif %}
+
+      // ISS Custom Marker Icon
+      icon_url = '/static/assets/iss.png'
+      icon_size = [100, 100]
+      icon_anchor = [50, 50]
+      icon = L.icon({
+        iconUrl: icon_url,
+        iconSize: icon_size,
+        iconAnchor: icon_anchor,
+      });
+
+      // Add the marker
+      var marker = L.marker([{{ latitude }}, {{ longitude }}], {icon: icon}).addTo(mymap);
+
+      // Update the marker every 60 seconds
+      setInterval(function() {
+        // Make a GET request to the ISS tracker API
+        fetch('http://api.open-notify.org/iss-now.json')
+          .then(response => response.json())
+          .then(data => {
+            // Extract the latitude and longitude from the response
+            var latitude = data['iss_position']['latitude'];
+            var longitude = data['iss_position']['longitude'];
+            // Update the marker position
+            marker.setLatLng([latitude, longitude]);
+            // Set the view to the new marker position
+            mymap.setView([latitude, longitude]);
+          });
+      }, 5000);
+    </script>
+
+<hr>
+
+
+
+  <div class="row">
+  <div class="col-md-6">
+    <img src="/static/assets/iss-in-space.jpg" class="img-fluid">
+    <img src="/static/assets/iss-in-space2.jpg" class="img-fluid mt-3">
+  </div>
+  <div class="col-md-6">
+    <h3>Some Cool ISS Facts</h3>
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">It travels at a speed of approximately 17,500 miles per hour (28,000 kilometers per hour) and orbits the Earth once every 90 minutes.</li>
+      <li class="list-group-item">It is the largest human-made object in space, measuring 357 feet (109 meters) long and 240 feet (73 meters) wide, with a mass of about 925,000 pounds (419,000 kilograms).</li>
+      <li class="list-group-item">It's also home to a crew of six astronauts who work and live on board for six-month periods, conducting experiments and performing maintenance tasks.</li>
+      <li class="list-group-item">The ISS orbits at an altitude of approximately 250 miles (400 kilometers) above the Earth's surface, and can be seen from the ground with the naked eye as a bright, moving point of light.</li>
+      <li class="list-group-item">The ISS has been continuously occupied by astronauts since November 2000, making it the longest continuous human presence in space.</li>
+      <li class="list-group-item">It is a joint project of five space agencies: NASA (United States), Roscosmos (Russia), JAXA (Japan), ESA (Europe), and CSA (Canada).</li>
+      <li class="list-group-item">The ISS has been used for a variety of scientific experiments, including studies on the effects of microgravity on human health, plant growth in space, and the behavior of fluids in microgravity.</li>
+      <li class="list-group-item">Canada created its robotic arm called Canadarm2, which is used to move equipment and supplies around the space station, and to capture visiting spacecraft.</li>
+      <li class="list-group-item">The ISS is equipped with a special toilet that uses air flow to direct waste into a holding tank, which is periodically emptied into a resupply spacecraft for disposal.</li>
+      <li class="list-group-item">The ISS is scheduled to be decommissioned in the late 2020s, at which point it will be deliberately deorbited and burned up in the Earth's atmosphere.</li>
+    </ul>
+  </div>
+</div>
+
+<hr>
+
+{% endblock %}
