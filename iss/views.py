@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 
 def get_lat_long(city_name, country_name):
-    key = 'd1f2a3a44d2a4f11b11495a90cec6a2b'  # Replace with your own API key
+    key = ''  # Replace with your own API key
     geocoder = OpenCageGeocode(key)
     query = f'{city_name}, {country_name}'
     results = geocoder.geocode(query)
